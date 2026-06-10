@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tools & Utilities</title>
+    <meta name="description" content="A collection of Power Digital tools and utilities." />
+
+    <meta property="og:title" content="Tools & Utilities" />
+    <meta property="og:description" content="A collection of Power Digital tools and utilities." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧰</text></svg>"
+    />
+    <meta id="theme-color" name="theme-color" content="#fafaf7" />
+
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Apply theme before paint to avoid a flash: explicit choice wins,
+      // otherwise fall back to the OS preference.
+      (function () {
+        var saved = localStorage.getItem('web_tools.theme');
+        var dark =
+          saved === 'dark' ||
+          (saved === null &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      })();
+    </script>
+  </head>
+  <body>
+    <button id="theme-toggle" class="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+
+    <main>
+      <h1>Tools & Utilities</h1>
+      <p class="lede">A collection of Power Digital tools and utilities.</p>
+
+      <ul class="projects">
+        <li>
+          <a href="./meeting-agenda/">
+            <h2>Meeting Agenda</h2>
+            <p>Plan a meeting, take notes against each agenda item, time-box topics, and export or share when you're done.</p>
+          </a>
+        </li>
+        <li>
+          <a href="./dbt-config/">
+            <h2>dbt Config Generator</h2>
+            <p>Fill out a guided form to generate <code>dbt_project.yml</code>, <code>sources.yml</code>, and <code>packages.yml</code>, with live YAML preview. Copy a link to save or share, or download the files.</p>
+          </a>
+        </li>
+        <li>
+          <a href="./regex-builder/">
+            <h2>Regex Builder</h2>
+            <p>Describe what you want to match by stacking plain-English conditions — contains, starts/ends with, a number, one of these words, common formats — and the regular expression builds itself. Live test panel with match highlighting and a plain-English explanation. No AI, runs entirely client-side.</p>
+          </a>
+        </li>
+      </ul>
+    </main>
+
+    <script>
+      (function () {
+        const root = document.documentElement;
+        const toggle = document.getElementById('theme-toggle');
+        const themeColor = document.getElementById('theme-color');
+        const sync = () => {
+          const dark = root.dataset.theme === 'dark';
+          toggle.textContent = dark ? '☀' : '🌙';
+          toggle.setAttribute('aria-pressed', String(dark));
+          themeColor.setAttribute('content', dark ? '#15151a' : '#fafaf7');
+        };
+        sync();
+        toggle.addEventListener('click', () => {
+          const dark = root.dataset.theme !== 'dark';
+          root.dataset.theme = dark ? 'dark' : '';
+          localStorage.setItem('web_tools.theme', dark ? 'dark' : 'light');
+          sync();
+        });
+      })();
+    </script>
+  </body>
+</html>

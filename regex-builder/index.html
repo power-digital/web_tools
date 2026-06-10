@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Regex Builder</title>
+    <meta name="description" content="Describe what you want to match with plain-English conditions and get a regular expression." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🔍</text></svg>"
+    />
+    <meta id="theme-color" name="theme-color" content="#fafaf7" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Apply theme before paint to avoid a flash.
+      (function () {
+        var saved = localStorage.getItem('web_tools.theme');
+        var dark =
+          saved === 'dark' ||
+          (saved === null &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__inner">
+        <a href="../" class="back-link" title="Back to projects">←</a>
+        <h1>Regex Builder</h1>
+        <div class="header-controls">
+          <button id="copy-link" class="btn btn-accent" title="Copy a shareable link">🔗 Copy link</button>
+          <button id="theme-toggle" class="btn-icon" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <p class="url-hint">Describe what to match by stacking plain-English conditions — the regex builds itself. Your whole setup lives in the URL; copy the link to save or share.</p>
+
+      <section class="starters">
+        <span class="starters__label">Quick start:</span>
+        <div class="starters__btns" id="starters"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2>Conditions</h2>
+          <span class="hint">Pieces are matched in order, top to bottom.</span>
+        </div>
+        <div id="cond-list" class="cond-list"></div>
+        <button id="add-cond" class="btn btn-primary add-cond">+ Add condition</button>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2>Options</h2></div>
+        <div class="options">
+          <label class="opt"><input type="checkbox" id="opt-start" /> Must start at the beginning <code>^</code></label>
+          <label class="opt"><input type="checkbox" id="opt-end" /> Must reach the end <code>$</code></label>
+          <label class="opt"><input type="checkbox" id="opt-word" /> Whole word only <code>\b</code></label>
+        </div>
+        <div class="flags">
+          <span class="flags__label">Flags:</span>
+          <label class="opt"><input type="checkbox" id="flag-g" /> global <code>g</code></label>
+          <label class="opt"><input type="checkbox" id="flag-i" /> ignore case <code>i</code></label>
+          <label class="opt"><input type="checkbox" id="flag-m" /> multiline <code>m</code></label>
+          <label class="opt"><input type="checkbox" id="flag-s" /> dotall <code>s</code></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2>Result</h2></div>
+        <div class="regex-box">
+          <code id="regex-out" class="regex-out">(empty)</code>
+          <div class="regex-actions">
+            <button class="btn btn-accent" data-copy="slashes">Copy /regex/</button>
+            <button class="btn" data-copy="pattern">Copy pattern</button>
+          </div>
+        </div>
+        <ul id="explain" class="explain"></ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2>Test</h2>
+          <span id="match-count" class="hint"></span>
+        </div>
+        <textarea id="test-input" class="test-input" rows="4" spellcheck="false" placeholder="Paste sample text — matches highlight live."></textarea>
+        <pre id="test-output" class="test-output" aria-live="polite"></pre>
+        <div id="test-groups" class="test-groups" aria-live="polite"></div>
+      </section>
+
+      <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

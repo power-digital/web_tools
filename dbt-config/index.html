@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>dbt Config Generator</title>
+    <meta name="description" content="Generate dbt_project.yml, sources.yml, and packages.yml from a guided form." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧱</text></svg>"
+    />
+    <meta id="theme-color" name="theme-color" content="#fafaf7" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Match the saved/OS theme before paint to avoid a flash.
+      (function () {
+        var saved = localStorage.getItem('web_tools.theme');
+        var dark =
+          saved === 'dark' ||
+          (saved === null &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__inner">
+        <a href="../" class="back-link" title="Back to projects">←</a>
+        <h1>dbt Config Generator</h1>
+        <div class="header-controls">
+          <button id="new-config" class="btn" title="Start a new, blank config">+ New</button>
+          <button id="copy-link" class="btn btn-accent" title="Copy a shareable link to this config">🔗 Copy link</button>
+          <button id="theme-toggle" class="btn-icon" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Config files">
+      <button class="tab active" data-tab="project" role="tab" aria-selected="true">dbt_project.yml</button>
+      <button class="tab" data-tab="sources" role="tab" aria-selected="false">sources.yml</button>
+      <button class="tab" data-tab="packages" role="tab" aria-selected="false">packages.yml</button>
+    </nav>
+
+    <main class="container">
+      <p class="url-hint">
+        Your config lives in the URL — copy the link to save or share. Reload safe; close-tab safe (if you've copied the link).
+      </p>
+
+      <!-- ===================== dbt_project.yml ===================== -->
+      <div class="panel active" data-panel="project">
+        <div class="split">
+          <form class="form" id="project-form" autocomplete="off">
+            <section class="group">
+              <h2>Project</h2>
+              <p class="hint">Required keys for a valid <code>dbt_project.yml</code>.</p>
+              <div class="field-grid">
+                <label class="field">
+                  <span>Project name <em class="req">*</em></span>
+                  <input type="text" id="p-name" placeholder="my_dbt_project" />
+                </label>
+                <label class="field">
+                  <span>Profile <em class="req">*</em></span>
+                  <input type="text" id="p-profile" placeholder="profile in profiles.yml" />
+                </label>
+                <label class="field">
+                  <span>Version</span>
+                  <input type="text" id="p-version" placeholder="1.0.0" />
+                </label>
+                <label class="field">
+                  <span>config-version</span>
+                  <input type="number" id="p-config-version" value="2" min="1" step="1" />
+                </label>
+                <label class="field grow">
+                  <span>require-dbt-version <small>(optional)</small></span>
+                  <input type="text" id="p-require-version" placeholder='e.g. ">=1.5.0,<2.0.0"' />
+                </label>
+              </div>
+            </section>
+
+            <section class="group">
+              <h2>Default model config</h2>
+              <p class="hint">Applied to all models under the project namespace. Leave blank to omit.</p>
+              <div class="field-grid">
+                <label class="field">
+                  <span>Materialization</span>
+                  <select id="p-materialized">
+                    <option value="">— none —</option>
+                    <option value="view">view</option>
+                    <option value="table">table</option>
+                    <option value="incremental">incremental</option>
+                    <option value="ephemeral">ephemeral</option>
+                    <option value="materialized_view">materialized_view</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="subhead-row">
+                <h3>Model folders <small>(optional)</small></h3>
+                <button type="button" class="btn btn-sm" data-add="model">+ Folder</button>
+              </div>
+              <p class="hint">Per-subfolder overrides, e.g. <code>staging</code> as views, <code>marts</code> as tables.</p>
+              <div id="model-rows" class="rows"></div>
+            </section>
+
+            <section class="group">
+              <h2>Seeds <small>(optional)</small></h2>
+              <p class="hint">Config for CSV files in your <code>seeds/</code> directory.</p>
+              <div class="field-grid">
+                <label class="field"><span>Default schema</span><input type="text" id="seed-schema" placeholder="e.g. seed_data" /></label>
+                <label class="field"><span>Quote columns</span>
+                  <select id="seed-quote-columns"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+                </label>
+              </div>
+              <div class="subhead-row">
+                <h3>Seed folders <small>(optional)</small></h3>
+                <button type="button" class="btn btn-sm" data-add="seed">+ Folder</button>
+              </div>
+              <p class="hint">Per-subfolder overrides under <code>seeds/</code>.</p>
+              <div id="seed-rows" class="rows"></div>
+            </section>
+
+            <section class="group">
+              <h2>Variables <small>(optional)</small></h2>
+              <div class="subhead-row">
+                <p class="hint">Project-level <code>vars</code> available to all models. Values accept JSON for lists, dicts, numbers, booleans, and null — e.g. <code>["a","b"]</code> or <code>{"k":"v"}</code>; bare text stays a string.</p>
+                <button type="button" class="btn btn-sm" data-add="var">+ Variable</button>
+              </div>
+              <div id="var-rows" class="rows"></div>
+            </section>
+
+            <section class="group collapsible" id="advanced">
+              <button type="button" class="group-toggle" aria-expanded="false">
+                <span class="chevron">▸</span> Advanced <small>(paths, quoting, hooks)</small>
+              </button>
+              <div class="group-body" hidden>
+                <h3>Paths</h3>
+                <p class="hint">Comma-separated. Blank uses the dbt default.</p>
+                <div class="field-grid">
+                  <label class="field"><span>model-paths</span><input type="text" id="p-model-paths" placeholder="models" /></label>
+                  <label class="field"><span>seed-paths</span><input type="text" id="p-seed-paths" placeholder="seeds" /></label>
+                  <label class="field"><span>test-paths</span><input type="text" id="p-test-paths" placeholder="tests" /></label>
+                  <label class="field"><span>analysis-paths</span><input type="text" id="p-analysis-paths" placeholder="analyses" /></label>
+                  <label class="field"><span>macro-paths</span><input type="text" id="p-macro-paths" placeholder="macros" /></label>
+                  <label class="field"><span>snapshot-paths</span><input type="text" id="p-snapshot-paths" placeholder="snapshots" /></label>
+                  <label class="field"><span>clean-targets</span><input type="text" id="p-clean-targets" placeholder="target, dbt_packages" /></label>
+                </div>
+
+                <h3>Quoting</h3>
+                <p class="hint">Leave on <em>default</em> to omit the key entirely.</p>
+                <div class="field-grid">
+                  <label class="field"><span>database</span>
+                    <select id="p-quote-database"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+                  </label>
+                  <label class="field"><span>schema</span>
+                    <select id="p-quote-schema"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+                  </label>
+                  <label class="field"><span>identifier</span>
+                    <select id="p-quote-identifier"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+                  </label>
+                </div>
+
+                <h3>Hooks</h3>
+                <p class="hint">One statement per line.</p>
+                <label class="field grow"><span>on-run-start</span>
+                  <textarea id="p-on-run-start" rows="2" placeholder="{{ create_udfs() }}"></textarea>
+                </label>
+                <label class="field grow"><span>on-run-end</span>
+                  <textarea id="p-on-run-end" rows="2" placeholder="grant select on all tables ..."></textarea>
+                </label>
+              </div>
+            </section>
+          </form>
+
+          <aside class="output">
+            <div class="output-head">
+              <span class="filename">dbt_project.yml</span>
+              <div class="output-actions">
+                <button type="button" class="btn btn-sm" data-import="project">⬆ Import</button>
+                <button type="button" class="btn btn-sm" data-copy="project">Copy</button>
+                <button type="button" class="btn btn-sm" data-download="project">Download</button>
+              </div>
+            </div>
+            <pre id="out-project" class="code-out" aria-live="polite"></pre>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ===================== sources.yml ===================== -->
+      <div class="panel" data-panel="sources">
+        <div class="split">
+          <form class="form" id="sources-form" autocomplete="off">
+            <section class="group">
+              <div class="subhead-row">
+                <h2>Sources</h2>
+                <button type="button" class="btn" data-add="source">+ Source</button>
+              </div>
+              <p class="hint">Each source is a schema in your warehouse holding one or more raw tables.</p>
+              <div id="source-cards"></div>
+            </section>
+          </form>
+
+          <aside class="output">
+            <div class="output-head">
+              <span class="filename">models/sources.yml</span>
+              <div class="output-actions">
+                <button type="button" class="btn btn-sm" data-import="sources">⬆ Import</button>
+                <button type="button" class="btn btn-sm" data-copy="sources">Copy</button>
+                <button type="button" class="btn btn-sm" data-download="sources">Download</button>
+              </div>
+            </div>
+            <pre id="out-sources" class="code-out" aria-live="polite"></pre>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ===================== packages.yml ===================== -->
+      <div class="panel" data-panel="packages">
+        <div class="split">
+          <form class="form" id="packages-form" autocomplete="off">
+            <section class="group">
+              <div class="subhead-row">
+                <h2>Packages</h2>
+                <button type="button" class="btn btn-sm" data-add="package">+ Package</button>
+              </div>
+              <p class="hint">
+                Each entry is a dbt package. Choose <strong>hub</strong> for
+                <a href="https://hub.getdbt.com/" target="_blank" rel="noopener">hub.getdbt.com</a>,
+                <strong>git</strong> for any Git repo (GitHub, GitLab, self-hosted), or
+                <strong>local</strong> for a sibling project on disk.
+              </p>
+              <div id="package-cards"></div>
+            </section>
+          </form>
+
+          <aside class="output">
+            <div class="output-head">
+              <span class="filename">packages.yml</span>
+              <div class="output-actions">
+                <button type="button" class="btn btn-sm" data-import="packages">⬆ Import</button>
+                <button type="button" class="btn btn-sm" data-copy="packages">Copy</button>
+                <button type="button" class="btn btn-sm" data-download="packages">Download</button>
+              </div>
+            </div>
+            <pre id="out-packages" class="code-out" aria-live="polite"></pre>
+          </aside>
+        </div>
+      </div>
+
+      <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+    </main>
+
+    <!-- ===================== row / card templates ===================== -->
+    <template id="tpl-var">
+      <div class="row var-row">
+        <input type="text" class="v-key" placeholder="key" />
+        <input type="text" class="v-val" placeholder='value, ["a","b"], or {"k":"v"}' />
+        <button type="button" class="btn-icon row-remove" title="Remove" aria-label="Remove">✕</button>
+      </div>
+    </template>
+
+    <template id="tpl-model">
+      <div class="row model-row">
+        <input type="text" class="m-path" placeholder="folder (e.g. staging)" />
+        <select class="m-materialized">
+          <option value="">materialization…</option>
+          <option value="view">view</option>
+          <option value="table">table</option>
+          <option value="incremental">incremental</option>
+          <option value="ephemeral">ephemeral</option>
+          <option value="materialized_view">materialized_view</option>
+        </select>
+        <input type="text" class="m-schema" placeholder="schema" />
+        <input type="text" class="m-tags" placeholder="tags (comma)" />
+        <button type="button" class="btn-icon row-remove" title="Remove" aria-label="Remove">✕</button>
+      </div>
+    </template>
+
+    <template id="tpl-seed">
+      <div class="row seed-row">
+        <input type="text" class="sd-path" placeholder="folder (e.g. lookups)" />
+        <input type="text" class="sd-schema" placeholder="schema" />
+        <select class="sd-quote">
+          <option value="">quote columns…</option>
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+        <input type="text" class="sd-tags" placeholder="tags (comma)" />
+        <button type="button" class="btn-icon row-remove" title="Remove" aria-label="Remove">✕</button>
+      </div>
+    </template>
+
+    <template id="tpl-source">
+      <div class="card source-card">
+        <div class="card-head">
+          <span class="card-grip">source</span>
+          <input type="text" class="s-name" placeholder="source name (required)" />
+          <button type="button" class="btn-icon row-remove" title="Remove source" aria-label="Remove source">✕</button>
+        </div>
+        <div class="field-grid">
+          <label class="field grow"><span>description</span><input type="text" class="s-description" placeholder="optional" /></label>
+          <label class="field"><span>database</span><input type="text" class="s-database" placeholder="optional" /></label>
+          <label class="field"><span>schema</span><input type="text" class="s-schema" placeholder="defaults to source name" /></label>
+          <label class="field"><span>loader</span><input type="text" class="s-loader" placeholder="optional" /></label>
+          <label class="field"><span>loaded_at_field</span><input type="text" class="s-loaded-at" placeholder="for freshness" /></label>
+        </div>
+        <details class="freshness">
+          <summary>Freshness <small>(optional)</small></summary>
+          <div class="field-grid">
+            <label class="field"><span>warn_after count</span><input type="number" class="s-warn-count" min="0" step="1" /></label>
+            <label class="field"><span>warn_after period</span>
+              <select class="s-warn-period"><option value="">—</option><option value="minute">minute</option><option value="hour">hour</option><option value="day">day</option></select>
+            </label>
+            <label class="field"><span>error_after count</span><input type="number" class="s-error-count" min="0" step="1" /></label>
+            <label class="field"><span>error_after period</span>
+              <select class="s-error-period"><option value="">—</option><option value="minute">minute</option><option value="hour">hour</option><option value="day">day</option></select>
+            </label>
+            <label class="field grow"><span>filter <small>(SQL where clause)</small></span><input type="text" class="s-fresh-filter" placeholder="e.g. _loaded_at > dateadd('day', -3, current_date)" /></label>
+          </div>
+        </details>
+        <details class="more">
+          <summary>More <small>(enabled, tags, meta, quoting)</small></summary>
+          <div class="field-grid">
+            <label class="field"><span>enabled</span>
+              <select class="s-enabled"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+            </label>
+            <label class="field"><span>tags</span><input type="text" class="s-tags" placeholder="comma separated" /></label>
+            <label class="field grow"><span>meta <small>(JSON object)</small></span><input type="text" class="s-meta" placeholder='{"owner":"data-team"}' /></label>
+            <label class="field"><span>quote database</span>
+              <select class="s-quote-database"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+            </label>
+            <label class="field"><span>quote schema</span>
+              <select class="s-quote-schema"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+            </label>
+            <label class="field"><span>quote identifier</span>
+              <select class="s-quote-identifier"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+            </label>
+          </div>
+        </details>
+        <div class="subhead-row indent">
+          <h3>Tables</h3>
+          <button type="button" class="btn btn-sm" data-add="table">+ Table</button>
+        </div>
+        <div class="tables"></div>
+      </div>
+    </template>
+
+    <template id="tpl-table">
+      <div class="card table-card">
+        <div class="card-head">
+          <span class="card-grip">table</span>
+          <input type="text" class="t-name" placeholder="table name (required)" />
+          <button type="button" class="btn-icon row-remove" title="Remove table" aria-label="Remove table">✕</button>
+        </div>
+        <div class="field-grid">
+          <label class="field grow"><span>description</span><input type="text" class="t-description" placeholder="optional" /></label>
+          <label class="field"><span>identifier</span><input type="text" class="t-identifier" placeholder="if differs from name" /></label>
+          <label class="field"><span>loaded_at_field</span><input type="text" class="t-loaded-at" placeholder="overrides source" /></label>
+        </div>
+        <details class="freshness">
+          <summary>Freshness override <small>(optional)</small></summary>
+          <label class="chk"><input type="checkbox" class="t-fresh-disable" /> disable freshness for this table (<code>freshness: null</code>)</label>
+          <div class="field-grid">
+            <label class="field"><span>warn_after count</span><input type="number" class="t-warn-count" min="0" step="1" /></label>
+            <label class="field"><span>warn_after period</span>
+              <select class="t-warn-period"><option value="">—</option><option value="minute">minute</option><option value="hour">hour</option><option value="day">day</option></select>
+            </label>
+            <label class="field"><span>error_after count</span><input type="number" class="t-error-count" min="0" step="1" /></label>
+            <label class="field"><span>error_after period</span>
+              <select class="t-error-period"><option value="">—</option><option value="minute">minute</option><option value="hour">hour</option><option value="day">day</option></select>
+            </label>
+            <label class="field grow"><span>filter <small>(SQL where clause)</small></span><input type="text" class="t-fresh-filter" placeholder="optional" /></label>
+          </div>
+        </details>
+        <details class="more">
+          <summary>More <small>(enabled, tags, meta)</small></summary>
+          <div class="field-grid">
+            <label class="field"><span>enabled</span>
+              <select class="t-enabled"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+            </label>
+            <label class="field"><span>tags</span><input type="text" class="t-tags" placeholder="comma separated" /></label>
+            <label class="field grow"><span>meta <small>(JSON object)</small></span><input type="text" class="t-meta" placeholder='{"contains_pii":true}' /></label>
+          </div>
+        </details>
+        <div class="subhead-row indent">
+          <h4>Columns <small>(optional)</small></h4>
+          <button type="button" class="btn btn-sm" data-add="column">+ Column</button>
+        </div>
+        <div class="columns"></div>
+      </div>
+    </template>
+
+    <template id="tpl-column">
+      <div class="card column-card">
+        <div class="card-head">
+          <span class="card-grip">col</span>
+          <input type="text" class="c-name" placeholder="column name" />
+          <button type="button" class="btn-icon row-remove" title="Remove column" aria-label="Remove column">✕</button>
+        </div>
+        <label class="field grow"><span>description</span><input type="text" class="c-description" placeholder="optional" /></label>
+        <div class="col-tests">
+          <label class="chk" title="unique test"><input type="checkbox" class="c-unique" /> unique</label>
+          <label class="chk" title="not_null test"><input type="checkbox" class="c-notnull" /> not_null</label>
+        </div>
+        <details class="more">
+          <summary>More tests <small>(accepted_values, relationships)</small></summary>
+          <div class="field-grid">
+            <label class="field grow"><span>accepted_values</span><input type="text" class="c-accepted" placeholder="comma separated, e.g. active, churned, paused" /></label>
+            <label class="field"><span>relationships → to</span><input type="text" class="c-rel-to" placeholder="ref('dim_users') or source('raw','users')" /></label>
+            <label class="field"><span>relationships → field</span><input type="text" class="c-rel-field" placeholder="user_id" /></label>
+            <label class="field grow"><span>other tests</span><input type="text" class="c-tests" placeholder="comma separated test names" /></label>
+          </div>
+        </details>
+      </div>
+    </template>
+
+    <template id="tpl-package">
+      <div class="card package-card" data-pkg-type="hub">
+        <div class="card-head">
+          <span class="card-grip">pkg</span>
+          <select class="pk-type" title="Package type">
+            <option value="hub">hub</option>
+            <option value="git">git</option>
+            <option value="local">local</option>
+          </select>
+          <button type="button" class="btn-icon row-remove" title="Remove package" aria-label="Remove package">✕</button>
+        </div>
+
+        <div class="pkg-fields pkg-fields-hub">
+          <div class="field-grid">
+            <label class="field grow">
+              <span>package <em class="req">*</em> <small>(org/name on dbt Hub)</small></span>
+              <input type="text" class="pk-hub-name" placeholder="e.g. dbt-labs/dbt_utils" />
+            </label>
+            <label class="field">
+              <span>version <em class="req">*</em></span>
+              <input type="text" class="pk-hub-version" placeholder='e.g. 1.1.1 or [">=1.0.0","<2.0.0"]' />
+            </label>
+            <label class="field">
+              <span>install-prerelease</span>
+              <select class="pk-hub-prerelease"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="pkg-fields pkg-fields-git">
+          <div class="field-grid">
+            <label class="field grow">
+              <span>git URL <em class="req">*</em></span>
+              <input type="text" class="pk-git-url" placeholder="https://github.com/dbt-labs/dbt-utils.git" />
+            </label>
+            <label class="field">
+              <span>revision <small>(branch / tag / sha)</small></span>
+              <input type="text" class="pk-git-revision" placeholder="e.g. 1.1.1 or main" />
+            </label>
+            <label class="field">
+              <span>subdirectory</span>
+              <input type="text" class="pk-git-subdirectory" placeholder="optional" />
+            </label>
+            <label class="field">
+              <span>warn-unpinned</span>
+              <select class="pk-git-warn-unpinned"><option value="">default</option><option value="true">true</option><option value="false">false</option></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="pkg-fields pkg-fields-local">
+          <div class="field-grid">
+            <label class="field grow">
+              <span>local path <em class="req">*</em></span>
+              <input type="text" class="pk-local-path" placeholder="e.g. ../my_shared_project" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <dialog id="import-dialog">
+      <form method="dialog">
+        <h2>Import <code id="import-filename">dbt_project.yml</code></h2>
+        <p class="hint">Paste YAML below or choose a file. Loading replaces the current contents of this tab.</p>
+        <textarea id="import-text" rows="14" placeholder="# paste your YAML here, or pick a file below"></textarea>
+        <label class="file-row">Or choose a file: <input type="file" id="import-file" accept=".yml,.yaml,text/yaml,text/plain" /></label>
+        <p id="import-error" class="status-line error" role="alert"></p>
+        <menu class="dialog-actions">
+          <button value="cancel" class="btn">Cancel</button>
+          <button type="button" id="import-load" class="btn-primary">Load</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

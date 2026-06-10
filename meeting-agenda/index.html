@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meeting Agenda</title>
+    <meta name="description" content="Run timed meetings with markdown notes — full state lives in the URL, so the link is the save." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📋</text></svg>"
+    />
+    <meta id="theme-color" name="theme-color" content="#fafaf7" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Match the saved/OS theme before paint to avoid a flash.
+      (function () {
+        var saved = localStorage.getItem('web_tools.theme');
+        var dark =
+          saved === 'dark' ||
+          (saved === null &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__inner">
+        <a href="../" class="back-link" title="Back to projects">←</a>
+        <h1>Meeting Agenda</h1>
+        <div class="header-controls">
+          <button id="new-meeting" class="btn" title="Start a blank meeting">+ New</button>
+          <button id="preview-all" class="btn" title="Toggle markdown preview for all items">👁 Preview all</button>
+          <button id="export-md" class="btn" title="Export meeting notes as Markdown">⬇ Markdown</button>
+          <button id="copy-link" class="btn btn-accent" title="Copy a shareable link to this meeting">🔗 Copy link</button>
+          <button id="theme-toggle" class="btn-icon" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <p class="url-hint">
+        Your meeting lives in the URL — copy it to save or share. Reload safe; close-tab safe (if you've copied the link).
+      </p>
+
+      <section class="meeting-meta">
+        <input type="text" id="meeting-title" placeholder="Meeting title" class="meta-title" />
+        <div class="meta-row">
+          <label>
+            <span>Date</span>
+            <input type="date" id="meeting-date" />
+          </label>
+          <label class="grow">
+            <span>Attendees</span>
+            <input type="text" id="meeting-attendees" placeholder="Alice, Bob, …" />
+          </label>
+        </div>
+      </section>
+
+      <section class="agenda">
+        <div class="agenda-header">
+          <h2>Agenda</h2>
+          <span id="progress" class="progress"></span>
+        </div>
+        <ul id="agenda-list" class="agenda-list" aria-label="Agenda items"></ul>
+        <button id="add-item" class="btn-primary">+ Add agenda item</button>
+      </section>
+
+      <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+    </main>
+
+    <template id="item-template">
+      <li class="item" data-id="">
+        <div class="item-head">
+          <span class="drag-handle" title="Drag to reorder" aria-label="Drag handle">⋮⋮</span>
+          <input type="checkbox" class="item-done" aria-label="Mark item done" />
+          <input type="text" class="item-title" placeholder="Topic" />
+          <label class="allotted">
+            <input type="number" min="0" step="1" class="item-allotted" placeholder="—" aria-label="Allotted minutes" />
+            <span>min</span>
+          </label>
+          <div class="timer">
+            <span class="timer-display">00:00</span>
+            <button class="btn-icon timer-start" title="Start" aria-label="Start timer">▶</button>
+            <button class="btn-icon timer-pause" title="Pause" aria-label="Pause timer" hidden>⏸</button>
+            <button class="btn-icon timer-reset" title="Reset" aria-label="Reset timer">↺</button>
+          </div>
+          <button class="btn-icon item-next" title="Mark done &amp; start next" aria-label="Mark done and start next">⏭</button>
+          <button class="btn-icon item-delete" title="Delete item" aria-label="Delete item">✕</button>
+        </div>
+        <div class="notes-wrap">
+          <button type="button" class="notes-toggle btn-icon" title="Toggle preview" aria-label="Toggle preview">👁</button>
+          <textarea class="item-notes" placeholder="Notes… Markdown supported — try **bold**, - bullets, # headings, [links](url)" rows="3"></textarea>
+          <div class="item-notes-rendered prose" hidden></div>
+        </div>
+      </li>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

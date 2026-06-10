@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{TITLE}}</title>
+    <meta name="description" content="{{TAGLINE}}" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>{{EMOJI}}</text></svg>"
+    />
+    <meta id="theme-color" name="theme-color" content="#fafaf7" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Apply theme before paint to avoid a flash.
+      (function () {
+        var saved = localStorage.getItem('web_tools.theme');
+        var dark =
+          saved === 'dark' ||
+          (saved === null &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__inner">
+        <a href="../" class="back-link" title="Back to projects">←</a>
+        <h1>{{TITLE}}</h1>
+        <div class="header-controls">
+          <!-- TODO: project-specific action buttons go here -->
+          <button id="copy-link" class="btn btn-accent" title="Copy a shareable link">🔗 Copy link</button>
+          <button id="theme-toggle" class="btn-icon" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <p class="url-hint">{{TAGLINE}} — your state lives in the URL; copy the link to save or share.</p>
+
+      <!-- TODO: build your UI here -->
+      <section>
+        <p>Hello from {{TITLE}}.</p>
+      </section>
+
+      <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+    </main>
+
+    <!-- Remove if persistence model is not 'url' -->
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <!-- TODO: any extra CDN libs (marked + dompurify, sortablejs, chart.js, ...) go here -->
+    <script src="./app.js"></script>
+  </body>
+</html>
