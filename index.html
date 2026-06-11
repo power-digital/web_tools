@@ -38,26 +38,52 @@
       <h1>Tools & Utilities</h1>
       <p class="lede">A collection of Power Digital tools and utilities.</p>
 
-      <ul class="projects">
-        <li>
-          <a href="./meeting-agenda/">
-            <h2>Meeting Agenda</h2>
-            <p>Plan a meeting, take notes against each agenda item, time-box topics, and export or share when you're done.</p>
-          </a>
-        </li>
-        <li>
+      <div class="filters" id="filters" role="group" aria-label="Filter tools by category">
+        <button class="filter is-active" data-filter="all">All</button>
+        <button class="filter" data-filter="data">Data</button>
+        <button class="filter" data-filter="developer">Developer</button>
+        <button class="filter" data-filter="productivity">Productivity</button>
+      </div>
+
+      <ul class="projects" id="projects">
+        <li data-tags="data developer">
           <a href="./dbt-config/">
+            <span class="tags"><span class="tag">Data</span><span class="tag">Developer</span></span>
             <h2>dbt Config Generator</h2>
             <p>Fill out a guided form to generate <code>dbt_project.yml</code>, <code>sources.yml</code>, and <code>packages.yml</code>, with live YAML preview. Copy a link to save or share, or download the files.</p>
           </a>
         </li>
-        <li>
+        <li data-tags="data developer">
+          <a href="./cron-builder/">
+            <span class="tags"><span class="tag">Data</span><span class="tag">Developer</span></span>
+            <h2>Cron Builder</h2>
+            <p>Build and read cron expressions with a visual editor, presets, or direct field input. See a plain-English description and the next eight run times. Handy for dbt Cloud and scheduled jobs.</p>
+          </a>
+        </li>
+        <li data-tags="developer">
           <a href="./regex-builder/">
+            <span class="tags"><span class="tag">Developer</span></span>
             <h2>Regex Builder</h2>
             <p>Describe what you want to match by stacking plain-English conditions — contains, starts/ends with, a number, one of these words, common formats — and the regular expression builds itself. Live test panel with match highlighting and a plain-English explanation. No AI, runs entirely client-side.</p>
           </a>
         </li>
+        <li data-tags="developer">
+          <a href="./formatter/">
+            <span class="tags"><span class="tag">Developer</span></span>
+            <h2>Code Formatter</h2>
+            <p>Paste SQL, JSON, or Python and get it cleanly formatted — sqlfmt-style SQL with dialect support, pretty-printed JSON, and normalized Python indentation. Runs entirely client-side; nothing leaves your browser.</p>
+          </a>
+        </li>
+        <li data-tags="productivity">
+          <a href="./meeting-agenda/">
+            <span class="tags"><span class="tag">Productivity</span></span>
+            <h2>Meeting Agenda</h2>
+            <p>Plan a meeting, take notes against each agenda item, time-box topics, and export or share when you're done.</p>
+          </a>
+        </li>
       </ul>
+
+      <p class="no-results" id="no-results" hidden>No tools in this category yet.</p>
     </main>
 
     <script>
@@ -77,6 +103,30 @@
           root.dataset.theme = dark ? 'dark' : '';
           localStorage.setItem('web_tools.theme', dark ? 'dark' : 'light');
           sync();
+        });
+      })();
+
+      // Category filter — show only tools tagged with the chosen category.
+      (function () {
+        const filters = document.getElementById('filters');
+        const items = Array.from(document.querySelectorAll('#projects > li'));
+        const noResults = document.getElementById('no-results');
+
+        filters.addEventListener('click', (e) => {
+          const btn = e.target.closest('.filter');
+          if (!btn) return;
+          const active = btn.dataset.filter;
+          filters.querySelectorAll('.filter').forEach((b) =>
+            b.classList.toggle('is-active', b === btn)
+          );
+          let shown = 0;
+          items.forEach((li) => {
+            const tags = (li.dataset.tags || '').split(/\s+/);
+            const match = active === 'all' || tags.includes(active);
+            li.hidden = !match;
+            if (match) shown++;
+          });
+          noResults.hidden = shown > 0;
         });
       })();
     </script>

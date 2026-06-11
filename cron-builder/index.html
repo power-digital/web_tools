@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cron Builder</title>
+    <meta name="description" content="Build and read cron expressions with a visual editor, presets, or direct input — with a plain-English description and the next runs." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>⏰</text></svg>"
+    />
+    <meta id="theme-color" name="theme-color" content="#fafaf7" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Apply theme before paint to avoid a flash.
+      (function () {
+        var saved = localStorage.getItem('web_tools.theme');
+        var dark =
+          saved === 'dark' ||
+          (saved === null &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__inner">
+        <a href="../" class="back-link" title="Back to projects">←</a>
+        <h1>Cron Builder</h1>
+        <div class="header-controls">
+          <button id="theme-toggle" class="btn-icon" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <p class="url-hint">Build a cron expression with the visual editor, a preset, or by typing fields directly. The expression, a plain-English reading, and the next runs update live. Runs entirely client-side.</p>
+
+      <!-- expression display -->
+      <section class="expr-display">
+        <div class="expr-tokens" id="exprTokens"></div>
+        <div class="expr-copy-row">
+          <input class="expr-raw" id="exprRaw" readonly title="Click to select" />
+          <button class="btn btn-accent" id="copyExpr">Copy</button>
+        </div>
+      </section>
+
+      <p class="description-box" id="descriptionBox">—</p>
+
+      <!-- mode tabs -->
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab active" data-panel="visual">Visual</button>
+        <button class="mode-tab" data-panel="presets">Presets</button>
+        <button class="mode-tab" data-panel="manual">Manual</button>
+      </div>
+
+      <!-- ── VISUAL PANEL ── -->
+      <div class="panel active" id="panel-visual">
+        <div class="field-group">
+
+          <!-- Minute -->
+          <div class="cron-field" data-field="minute">
+            <div class="field-name">Minute<small>0–59</small></div>
+            <div class="field-controls">
+              <div class="radio-row">
+                <label class="radio-option checked"><input type="radio" name="minute_type" value="every" checked /> Every minute</label>
+                <label class="radio-option"><input type="radio" name="minute_type" value="specific" /> Specific</label>
+                <label class="radio-option"><input type="radio" name="minute_type" value="every_n" /> Every N</label>
+                <label class="radio-option"><input type="radio" name="minute_type" value="range" /> Range</label>
+              </div>
+              <div class="sub-controls" id="minute_sub" style="display:none"></div>
+            </div>
+          </div>
+
+          <!-- Hour -->
+          <div class="cron-field" data-field="hour">
+            <div class="field-name">Hour<small>0–23</small></div>
+            <div class="field-controls">
+              <div class="radio-row">
+                <label class="radio-option checked"><input type="radio" name="hour_type" value="every" checked /> Every hour</label>
+                <label class="radio-option"><input type="radio" name="hour_type" value="specific" /> Specific</label>
+                <label class="radio-option"><input type="radio" name="hour_type" value="every_n" /> Every N</label>
+                <label class="radio-option"><input type="radio" name="hour_type" value="range" /> Range</label>
+              </div>
+              <div class="sub-controls" id="hour_sub" style="display:none"></div>
+            </div>
+          </div>
+
+          <!-- Day of month -->
+          <div class="cron-field" data-field="dom">
+            <div class="field-name">Day<small>of month</small></div>
+            <div class="field-controls">
+              <div class="radio-row">
+                <label class="radio-option checked"><input type="radio" name="dom_type" value="every" checked /> Every day</label>
+                <label class="radio-option"><input type="radio" name="dom_type" value="specific" /> Specific</label>
+                <label class="radio-option"><input type="radio" name="dom_type" value="every_n" /> Every N</label>
+                <label class="radio-option"><input type="radio" name="dom_type" value="range" /> Range</label>
+              </div>
+              <div class="sub-controls" id="dom_sub" style="display:none"></div>
+            </div>
+          </div>
+
+          <!-- Month -->
+          <div class="cron-field" data-field="month">
+            <div class="field-name">Month</div>
+            <div class="field-controls">
+              <div class="radio-row">
+                <label class="radio-option checked"><input type="radio" name="month_type" value="every" checked /> Every month</label>
+                <label class="radio-option"><input type="radio" name="month_type" value="specific" /> Specific</label>
+              </div>
+              <div class="sub-controls" id="month_sub" style="display:none">
+                <div class="chips" id="month_chips"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Day of week -->
+          <div class="cron-field" data-field="dow">
+            <div class="field-name">Weekday</div>
+            <div class="field-controls">
+              <div class="radio-row">
+                <label class="radio-option checked"><input type="radio" name="dow_type" value="every" checked /> Every day</label>
+                <label class="radio-option"><input type="radio" name="dow_type" value="specific" /> Specific</label>
+                <label class="radio-option"><input type="radio" name="dow_type" value="weekdays" /> Weekdays</label>
+                <label class="radio-option"><input type="radio" name="dow_type" value="weekend" /> Weekends</label>
+              </div>
+              <div class="sub-controls" id="dow_sub" style="display:none">
+                <div class="chips" id="dow_chips"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- end visual -->
+
+      <!-- ── PRESETS PANEL ── -->
+      <div class="panel" id="panel-presets">
+        <div class="presets-grid" id="presetsGrid"></div>
+      </div>
+
+      <!-- ── MANUAL PANEL ── -->
+      <div class="panel" id="panel-manual">
+        <p class="manual-hint">Enter each field directly. Use <code>*</code> for any, <code>*/n</code> for every-n, <code>a-b</code> for range, <code>a,b,c</code> for list.</p>
+        <div class="manual-grid">
+          <div class="manual-field"><label>Minute</label><input type="text" id="m_min" value="*" /></div>
+          <div class="manual-field"><label>Hour</label><input type="text" id="m_hour" value="*" /></div>
+          <div class="manual-field"><label>Day (month)</label><input type="text" id="m_dom" value="*" /></div>
+          <div class="manual-field"><label>Month</label><input type="text" id="m_month" value="*" /></div>
+          <div class="manual-field"><label>Weekday</label><input type="text" id="m_dow" value="*" /></div>
+        </div>
+      </div>
+
+      <!-- ── NEXT RUNS ── -->
+      <section class="next-runs">
+        <h2>Next 8 runs <span class="next-runs__tz">(browser local time)</span></h2>
+        <table class="runs-table">
+          <thead><tr><th>#</th><th>Date &amp; time</th><th>In</th></tr></thead>
+          <tbody id="runsBody"></tbody>
+        </table>
+      </section>
+
+      <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

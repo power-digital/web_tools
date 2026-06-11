@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Formatter</title>
+    <meta name="description" content="Paste SQL, JSON, or Python and get it formatted — runs entirely client-side, nothing leaves your browser." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>✨</text></svg>"
+    />
+    <meta id="theme-color" name="theme-color" content="#fafaf7" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Apply theme before paint to avoid a flash.
+      (function () {
+        var saved = localStorage.getItem('web_tools.theme');
+        var dark =
+          saved === 'dark' ||
+          (saved === null &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.dataset.theme = 'dark';
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__inner">
+        <a href="../" class="back-link" title="Back to projects">←</a>
+        <h1>Code Formatter</h1>
+        <div class="header-controls">
+          <button id="theme-toggle" class="btn-icon" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <p class="url-hint">Paste code on the left, get it formatted on the right. Everything runs in your browser — nothing is uploaded.</p>
+
+      <div class="controls">
+        <div class="lang-toggle" id="langToggle">
+          <button class="active" data-lang="sql">SQL</button>
+          <button data-lang="json">JSON</button>
+          <button data-lang="python">Python</button>
+        </div>
+        <label class="option-wrap" id="dialectWrap">
+          <span>Dialect</span>
+          <select id="dialectSelect">
+            <option value="snowflake">Snowflake</option>
+            <option value="bigquery">BigQuery</option>
+            <option value="postgresql">PostgreSQL</option>
+          </select>
+        </label>
+        <label class="option-wrap" id="linelenWrap">
+          <span>Line length</span>
+          <input type="number" id="lineLen" value="88" min="40" max="200" />
+        </label>
+      </div>
+
+      <div class="panes">
+        <div>
+          <div class="pane-label">
+            <span>Input</span>
+            <span class="meta" id="charCount">0 chars</span>
+          </div>
+          <textarea id="inputArea" spellcheck="false" placeholder="Paste your SQL here…"></textarea>
+        </div>
+        <div>
+          <div class="pane-label">
+            <span>Formatted</span>
+            <span class="meta" id="lineCount"></span>
+          </div>
+          <div class="output-box" id="outputBox"></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="formatBtn">Format <kbd>⌘↵</kbd></button>
+        <button class="btn" id="copyBtn">Copy output</button>
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+
+      <p class="note" id="sqlNote">
+        SQL formatted using the <a href="https://docs.sqlfmt.com/style/" target="_blank" rel="noopener">sqlfmt style</a>
+        — lowercase keywords, trailing commas, 4-space indent, hierarchy-first line wrapping.
+      </p>
+      <p class="note" id="pyNote" style="display:none">
+        Python is normalized — 4-space indentation, tidy comma and internal spacing, and fewer blank lines.
+        It is not a full PEP 8 / black reformatter; strings, docstrings, and comments are left untouched.
+      </p>
+
+      <p id="status-line" class="status-line" role="status" aria-live="polite"></p>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/sql-formatter@15.8.1/dist/sql-formatter.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
