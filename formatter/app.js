@@ -294,13 +294,28 @@
     return JSON.stringify(JSON.parse(raw), null, 2);
   }
 
-  // ----- Python formatter -----
-  // Lightweight, string-aware normalizer: re-indents to 4 spaces, cleans up
-  // comma/internal spacing, and collapses extra blank lines — without ever
-  // touching the interior of strings (incl. multi-line triple-quoted ones),
-  // comments, or f-strings. It is NOT a full PEP 8 / black reformatter, which
-  // would need a real Python parser; it normalizes layout, it doesn't rewrite.
-  function formatPython(code) {
+  // ----- Python: real formatter (Ruff, black-compatible, via WASM) -----
+  // Loaded lazily on first use so the wasm download only happens if someone
+  // actually formats Python. Falls back to normalizePython() if it can't load.
+  const RUFF_URL = 'https://cdn.jsdelivr.net/npm/@astral-sh/ruff-wasm-web@0.15.16/ruff_wasm.js';
+  let ruffPromise = null;
+  function loadRuff() {
+    if (!ruffPromise) {
+      ruffPromise = (async () => {
+        const mod = await import(RUFF_URL);
+        await mod.default(); // instantiate the wasm (auto-resolves the .wasm URL)
+        return new mod.Workspace(mod.Workspace.defaultSettings(), mod.PositionEncoding.Utf16);
+      })().catch((e) => { ruffPromise = null; throw e; });
+    }
+    return ruffPromise;
+  }
+
+  // ----- Python: lightweight fallback normalizer -----
+  // String-aware layout tidy used only if Ruff fails to load (offline/CDN
+  // blocked): re-indents to 4 spaces, cleans comma/internal spacing, collapses
+  // extra blank lines — never touching strings, docstrings, or comments. It is
+  // NOT a real reformatter; that's what Ruff above provides.
+  function normalizePython(code) {
     const lines = code.split('\n');
 
     // Split one physical line into normal vs. protected (string|comment)
@@ -410,8 +425,11 @@
   }
 
   // ----- main format -----
-  function formatCode() {
+  let formatToken = 0;
+  async function formatCode() {
     const raw = inputArea.value;
+    const lang = currentLang;
+    const token = ++formatToken; // guard against stale async results
     if (!raw.trim()) {
       setOutput('', false);
       lineCount.textContent = '';
@@ -419,18 +437,32 @@
     }
     try {
       let result;
-      if (currentLang === 'sql') {
+      if (lang === 'sql') {
         const maxLen = parseInt(lineLen.value, 10) || 88;
         result = formatSQL(raw, dialectSel.value, maxLen);
-      } else if (currentLang === 'json') {
+      } else if (lang === 'json') {
         result = formatJSON(raw);
       } else {
-        result = formatPython(raw);
+        // Python — Ruff (real formatter); fall back to the normalizer if the
+        // wasm can't be loaded. Syntax errors from Ruff surface as errors.
+        let ws = null;
+        try {
+          setStatus('Loading Python formatter…');
+          ws = await loadRuff();
+          setStatus('');
+        } catch (e) {
+          ws = null;
+          setStatus('Ruff unavailable — used the lightweight normalizer instead.', 'error');
+        }
+        if (token !== formatToken) return; // a newer format superseded this one
+        result = ws ? ws.format(raw) : normalizePython(raw);
       }
+      if (token !== formatToken) return;
       setOutput(result, false);
       const n = result.split('\n').length;
       lineCount.textContent = n.toLocaleString() + ' line' + (n !== 1 ? 's' : '');
     } catch (err) {
+      if (token !== formatToken) return;
       setOutput('Error: ' + err.message, true);
       lineCount.textContent = '';
     }
