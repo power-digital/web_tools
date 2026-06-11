@@ -79,13 +79,27 @@
   // ----- sub-control builders -----
   function buildSubControls(field, type, min, max) {
     const sub = $('#' + field + '_sub');
-    sub.innerHTML = '';
+    const chips = field === 'month' ? $('#month_chips')
+                : field === 'dow'   ? $('#dow_chips')
+                : null;
+
+    // Remove only the dynamically-created controls — never the persistent
+    // chips container. (Wiping it via innerHTML used to break Month/Weekday
+    // after picking a chip-less option like Every/Weekdays/Weekends.)
+    Array.from(sub.children).forEach(c => { if (c !== chips) c.remove(); });
+
+    // Month / Weekday are chip-only: show chips for "Specific", hide otherwise.
+    if (chips) {
+      const showChips = type === 'specific';
+      sub.style.display = showChips ? 'flex' : 'none';
+      chips.style.display = showChips ? 'flex' : 'none';
+      return;
+    }
+
     if (type === 'every') { sub.style.display = 'none'; return; }
     sub.style.display = 'flex';
 
     if (type === 'specific') {
-      if (field === 'month') { $('#month_chips').parentElement.style.display = 'flex'; return; }
-      if (field === 'dow')   { $('#dow_chips').parentElement.style.display = 'flex'; return; }
       const inp = document.createElement('input');
       inp.type = 'number'; inp.min = min; inp.max = max; inp.value = min;
       inp.style.width = '5rem';
@@ -119,9 +133,6 @@
       r.addEventListener('change', () => {
         // update checked styling
         radios.forEach(rb => rb.closest('.radio-option').classList.toggle('checked', rb.checked));
-        // hide chip containers by default
-        if (field === 'month') $('#month_chips').parentElement.style.display = 'none';
-        if (field === 'dow')   $('#dow_chips').parentElement.style.display = 'none';
         buildSubControls(field, r.value, min, max);
         buildFromVisual();
       });
