@@ -134,6 +134,7 @@
     ['hex-color', 'a hex color', '#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})'],
     ['uuid', 'a UUID', '[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}'],
     ['zip-us', 'a US ZIP code', '\\d{5}(?:-\\d{4})?'],
+    ['gsheet-id', 'a Google Sheet ID', '[a-zA-Z0-9_-]{25,}'],
   ];
   const FORMAT_MAP = Object.fromEntries(FORMAT_OPTS.map(([v, , re]) => [v, re]));
   const FORMAT_LABEL = Object.fromEntries(FORMAT_OPTS.map(([v, l]) => [v, l]));
@@ -216,9 +217,20 @@
       build: (c) => (c.text ? `(?!.*${escLit(c.text)})` : ''),
       explain: (c) => `the text must not contain “${c.text}”`,
     },
+    raw: {
+      label: 'Your own regex…',
+      group: 'piece',
+      quant: true,
+      // Inserted verbatim — not escaped. Lets you drop in a pattern the guided
+      // conditions can't express, or paste a whole regex you already have.
+      fields: [{ key: 'pattern', kind: 'text', placeholder: 'raw regex, e.g. \\d{3}-[A-Z]+' }],
+      defaults: { pattern: '' },
+      build: (c) => c.pattern || '',
+      explain: (c) => `your custom pattern <code>${escapeHtml(c.pattern)}</code>`,
+    },
   };
 
-  const COND_ORDER = ['literal', 'charType', 'oneOf', 'charSet', 'format', 'contains', 'notContains'];
+  const COND_ORDER = ['literal', 'charType', 'oneOf', 'charSet', 'format', 'contains', 'notContains', 'raw'];
 
   let idSeq = 1;
   function makeCond(type) {
@@ -467,6 +479,14 @@
     {
       name: 'Hashtags',
       apply: () => ({ conds: [setFields(makeCond('literal'), { text: '#' }), withQ(makeCond('charType'), { mode: 'oneplus' }, { what: 'wordchar' })] }),
+    },
+    {
+      name: 'Google Sheet ID',
+      apply: () => ({ conds: [setFields(makeCond('format'), { preset: 'gsheet-id' })] }),
+    },
+    {
+      name: 'Your own regex',
+      apply: () => ({ conds: [setFields(makeCond('raw'), { pattern: '' })] }),
     },
   ];
   function setFields(c, fields) { return Object.assign(c, fields); }
